@@ -22,7 +22,7 @@ public class HelloApplication {
 
 	@PostConstruct
 	public void runAfterObjectCreated() {
-		informationRepository.deleteAll();
+		//informationRepository.deleteAll();
 		informationRepository.save(new InformationEntity("Overview",
 				"This is an example of using a data storage engine running separately from our applications server"));
 	}
