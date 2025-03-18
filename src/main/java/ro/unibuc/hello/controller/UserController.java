@@ -5,19 +5,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ro.unibuc.hello.dto.UserDto;
-import ro.unibuc.hello.service.UserService;
+import ro.unibuc.hello.service.implementation.*;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
-    private final UserService userService;
+    private final UserServiceImpl userService;
     
-    public UserController(UserService userService){
+    public UserController(UserServiceImpl userService){
         this.userService = userService;
     }
 
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<UserDto> createUser(@RequestBody CreateUserRequest request) {
          UserDto userDto = userService.createUser(request.toUserDto(), request.getPassword());
          return new ResponseEntity<>(userDto, HttpStatus.CREATED);
@@ -65,7 +65,7 @@ public class UserController {
          return ResponseEntity.noContent().build();
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<List<UserDto>> getAllUsers() {
          List<UserDto> users = userService.getAllUsers();
          return ResponseEntity.ok(users);
