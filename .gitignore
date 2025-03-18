@@ -43,3 +43,6 @@ infrastructure/prometheus/durable
 
 ### Durable Loki store
 infrastructure/loki/durable/
+
+### TEMPORARY MONGODB DATA STORAGE
+data/
