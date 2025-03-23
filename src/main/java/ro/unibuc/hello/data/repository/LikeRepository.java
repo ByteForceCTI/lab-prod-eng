@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 import ro.unibuc.hello.data.*;
 
-public interface LikeRepository  extends MongoRepository<LikeEntity, String> {
+public interface LikeRepository extends MongoRepository<LikeEntity, String> {
 
     List<LikeEntity> findByUserId(String userId);
 

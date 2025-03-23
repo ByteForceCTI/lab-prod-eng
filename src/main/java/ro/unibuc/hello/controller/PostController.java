@@ -3,6 +3,7 @@ package ro.unibuc.hello.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ro.unibuc.hello.data.PostEntity;
+import ro.unibuc.hello.dto.PostDto;
 import ro.unibuc.hello.exception.EntityNotFoundException;
 import ro.unibuc.hello.service.PostService;
 
@@ -21,13 +22,13 @@ public class PostController {
     }
 
     @GetMapping
-    public List<PostEntity> getAllPosts() {
-        return postService.getAllPosts();
+    public List<PostDto> getAllPosts() {
+        return postService.getVisiblePosts(null); // TODO - get logged in user ID and filter their posts accordingly
     }
 
     @GetMapping("/{id}")
-    public PostEntity getPostById(@PathVariable String id) throws EntityNotFoundException {
-        return postService.getPostById(id);
+    public PostDto getPostById(@PathVariable String id) throws EntityNotFoundException {
+        return postService.getPostById(id, null); // TODO - get logged in user ID and filter their posts accordingly
     }
 
     @PutMapping("/{id}")

@@ -2,33 +2,106 @@ package ro.unibuc.hello.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import ro.unibuc.hello.data.FriendshipEntity;
+import ro.unibuc.hello.data.FriendshipEntity.FriendshipStatus;
 import ro.unibuc.hello.data.PostEntity;
+import ro.unibuc.hello.data.PostEntity.PostVisibility;
 import ro.unibuc.hello.data.repository.PostRepository;
+import ro.unibuc.hello.dto.PostDto;
 import ro.unibuc.hello.exception.EntityNotFoundException;
+import ro.unibuc.hello.service.CommentService;
 
 @Service
 public class PostService {
 
     @Autowired
     private PostRepository postRepository;
+    
+    @Autowired
+    private CommentService commentService;
+
+    @Autowired
+    private LikeService likeService;
+    
+    @Autowired
+    private FriendshipService friendshipService;
+
+    private PostDto convertToDto(PostEntity post) {
+        PostDto dto = new PostDto();
+        dto.setId(post.getId());
+        dto.setUserId(post.getUserId());
+        dto.setContent(post.getContent());
+        dto.setMediaUrl(post.getMediaUrl());
+        dto.setCreatedAt(post.getCreatedAt());
+        dto.setUpdatedAt(post.getUpdatedAt());
+        dto.setVisibility(post.getVisibility().name());
+        return dto;
+    } // helper method to return aggregated data into a single entity to the controller
 
     public PostEntity createPost(PostEntity post) {
         post.setCreatedAt(new java.util.Date());
         return postRepository.save(post);
     }
 
-    public List<PostEntity> getAllPosts() {
+    private List<PostEntity> getAllPosts() {
         return postRepository.findAll();
-    } // se vor filtra dupa criterii - utilizator blocat, vizibilitate
+    } // we do not allow access to ALL posts of the application, we use the method to get visible posts only for the current user that takes visibility into account
 
-    public PostEntity getPostById(String id) throws EntityNotFoundException {
-        return postRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Post not found"));
+    // determine if a post is visible to the current user using friendship data.
+    private boolean isPostVisible(PostEntity post, String currentUserId) {
+        // get friendship between the post creator and the user who is viewing the post
+        FriendshipEntity friendship = friendshipService.getFriendshipBetween(post.getUserId(), currentUserId);
+        
+        // if post creator has blocked the viewer do not show post
+        if (friendship != null && friendship.getStatus() == FriendshipStatus.BLOCKED) {
+            return false;
+        }
+        
+        // if the post is FRIENDS_ONLY make sure the friendship is accepted by the viewer
+        if (post.getVisibility() == PostVisibility.FRIENDS_ONLY) {
+            if (friendship == null || friendship.getStatus() != FriendshipStatus.ACCEPTED) {
+                return false;
+            }
+        }
+        
+        return true; // if the conditions are met, we will allow the post to be shown to the viewer
     }
 
+    // function to get visible posts (as DTOs) for the current user, with aggregated comment and like counts.
+    public List<PostDto> getVisiblePosts(String currentUserId) {
+        List<PostEntity> posts = getAllPosts();
+        return posts.stream()
+                .filter(post -> isPostVisible(post, currentUserId))
+                .map(post -> {
+                    PostDto dto = convertToDto(post);
+                    // include like and comment counts in the DTO
+                    dto.setCommentCount(commentService.countCommentsForPost(post.getId()));
+                    dto.setLikeCount(likeService.countLikesForPost(post.getId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    // function to view a particular post by its id together with its aggrgated dataa
+    public PostDto getPostById(String id, String currentUserId) throws EntityNotFoundException {
+        PostEntity post = postRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Post not found"));
+        if (!isPostVisible(post, currentUserId)) {
+            throw new EntityNotFoundException("Post is not visible for the current user");
+        }
+        PostDto postDto = convertToDto(post);
+        postDto.setCommentCount(commentService.countCommentsForPost(post.getId()));
+        postDto.setLikeCount(likeService.countLikesForPost(post.getId()));
+        return postDto;
+    }
+    
+    
+    // function for post update
     public PostEntity updatePost(String id, PostEntity updatedPost) throws EntityNotFoundException {
         Optional<PostEntity> existingPostOpt = postRepository.findById(id);
 
@@ -43,11 +116,13 @@ public class PostService {
         }
     }
 
+    // function to delete a post and its associated data
     public void deletePost(String id) throws EntityNotFoundException {
         if (!postRepository.existsById(id)) {
             throw new EntityNotFoundException("Post not found");
         }
         postRepository.deleteById(id);
-        // se vor sterge in cascada si detaliile asociate (comentarii, likes etc)
+        commentService.deletePostComments(id);
+        likeService.deletePostLikes(id);
     }
 }

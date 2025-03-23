@@ -57,4 +57,12 @@ public class FriendshipService {
     public List<FriendshipEntity> getFriendships(String userId) {
         return friendshipRepository.findByUserId1OrUserId2(userId, userId);
     }
+
+    public FriendshipEntity getFriendshipBetween(String userId1, String userId2) {
+        FriendshipEntity friendship = friendshipRepository.findByUserId1AndUserId2(userId1, userId2);
+        if (friendship == null) {
+            friendship = friendshipRepository.findByUserId1AndUserId2(userId2, userId1);
+        }
+        return friendship;
+    } // helper for post service to determine the relation between the two users
 }
