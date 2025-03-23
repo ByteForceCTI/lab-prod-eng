@@ -46,3 +46,4 @@ infrastructure/loki/durable/
 
 ### TEMPORARY MONGODB DATA STORAGE
 data/
+.vscode/settings.json
