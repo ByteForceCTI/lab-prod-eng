@@ -3,14 +3,17 @@ package ro.unibuc.hello;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+
+import jakarta.annotation.PostConstruct;
 import ro.unibuc.hello.data.InformationEntity;
 import ro.unibuc.hello.data.UserEntity;
 import ro.unibuc.hello.data.repository.InformationRepository;
-import jakarta.annotation.PostConstruct;
-import ro.unibuc.hello.data.repository.*;
+import ro.unibuc.hello.data.repository.UserRepository;
 
 @SpringBootApplication
+@ComponentScan(basePackages = "ro.unibuc.hello")
 @EnableMongoRepositories(basePackageClasses = {InformationRepository.class, UserRepository.class})
 public class HelloApplication {
 
