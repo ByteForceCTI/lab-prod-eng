@@ -54,7 +54,7 @@ public class LikeService {
     }
 
     // function to delete a like by its id
-    private void deleteLike(String likeId) throws EntityNotFoundException {
+    public void deleteLike(String likeId) throws EntityNotFoundException {
         LikeEntity like = likeRepository.findById(likeId)
                 .orElseThrow(() -> new EntityNotFoundException("Like not found: " + likeId));
         likeRepository.delete(like);
