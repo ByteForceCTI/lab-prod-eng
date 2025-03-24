@@ -25,20 +25,20 @@ public class UserServiceImpl implements UserService {
     private UserDto convertToDto(UserEntity user) {
         UserDto dto = new UserDto();
         dto.setUsername(user.getUsername());
-        dto.setName(user.getName());
         dto.setBio(user.getBio());
         dto.setProfilePicture(user.getProfilePicture());
+        dto.setDateOfBirth(user.getDateOfBirth());
         return dto;
     }
     
     @Override
-    public UserDto createUser(UserDto userDto, String password) {
+    public UserDto createUser(UserDto userDto, String email, String password) {
          UserEntity userEntity = new UserEntity();
          userEntity.setUsername(userDto.getUsername());
-         userEntity.setName(userDto.getName());
          userEntity.setBio(userDto.getBio());
          userEntity.setProfilePicture(userDto.getProfilePicture());
-         // Use BCrypt directly to hash the password
+        userEntity.setDateOfBirth(userDto.getDateOfBirth());
+        userEntity.setEmail(email);
          userEntity.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
          
          userRepository.save(userEntity);
@@ -50,11 +50,10 @@ public class UserServiceImpl implements UserService {
          Optional<UserEntity> userOptional = userRepository.findByUsername(username);
          if(userOptional.isPresent()) {
               UserEntity user = userOptional.get();
-              // Use BCrypt to verify the password
               if(BCrypt.checkpw(password, user.getPasswordHash())) {
                   return convertToDto(user);
               } else {
-                  throw new RuntimeException("Incorrect password");
+                  throw new RuntimeException("Wrong password");
               }
          } else {
               throw new RuntimeException("User not found");
@@ -145,5 +144,15 @@ public class UserServiceImpl implements UserService {
          } else {
              throw new RuntimeException("User not found");
          }
+    }
+
+    @Override
+    public UserDto getUserByUsername(String username){
+        Optional<UserEntity> userOptional = userRepository.findByUsername(username);
+        if(userOptional.isPresent()) {
+            return convertToDto(userOptional.get());
+        } else {
+            throw new RuntimeException("User not found");
+        }
     }
 }
