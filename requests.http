@@ -55,3 +55,9 @@ DELETE http://localhost:8080/greetings/{{deleteGreetingId}}
 
 ###
 GET http://localhost:8080/users/all
+
+
+### get profile for user johndoe
+# @prompt username
+GET http://localhost:8080/users/profile
+    ?username = {{username}}
