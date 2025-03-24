@@ -5,7 +5,7 @@ import java.util.List;
 import ro.unibuc.hello.dto.UserDto;
 
 public interface UserService {
-    UserDto createUser(UserDto userDto, String password);
+    UserDto createUser(UserDto userDto, String email, String password);
 
     UserDto login(String username, String password);
 
@@ -24,4 +24,6 @@ public interface UserService {
     List<UserDto> getAllUsers();
     
     UserDto getUserById(String userId);
+
+    UserDto getUserByUsername(String username);
 }

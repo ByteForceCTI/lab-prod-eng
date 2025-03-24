@@ -1,3 +1,5 @@
+package ro.unibuc.hello.controller;
+
 import ro.unibuc.hello.service.UserService;
 
 import java.util.List;
@@ -5,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ro.unibuc.hello.dto.UserDto;
+import java.util.Date;
 import ro.unibuc.hello.service.implementation.*;
 
 @RestController
@@ -19,7 +22,7 @@ public class UserController {
 
     @PostMapping("/create")
     public ResponseEntity<UserDto> createUser(@RequestBody CreateUserRequest request) {
-         UserDto userDto = userService.createUser(request.toUserDto(), request.getPassword());
+         UserDto userDto = userService.createUser(request.toUserDto(), request.getEmail(),  request.getPassword());
          return new ResponseEntity<>(userDto, HttpStatus.CREATED);
     }
 
@@ -77,14 +80,22 @@ public class UserController {
          return ResponseEntity.ok(userDto);
     }
 
-    // Clase DTO pentru request-uri (se pot muta în pachetul DTO)
     public static class CreateUserRequest {
         private String username;
         private String name;
         private String bio;
         private String profilePicture;
         private String password;
-        // Getters și setters
+        private String email;
+        private Date dateOfBirth;
+
+        public Date getDateOfBirth(){
+            return dateOfBirth;
+        }
+
+        public void setDateOfBirth(Date dateOfBirth){
+            this.dateOfBirth = dateOfBirth;
+        }
 
         public String getUsername() {
             return username;
@@ -94,13 +105,14 @@ public class UserController {
             this.username = username;
         }
 
-        public String getName() {
-            return name;
+        public String getEmail(){
+            return email;
         }
 
-        public void setName(String name) {
-            this.name = name;
+        public void setEmail(String email){
+            this.email = email;
         }
+
 
         public String getBio() {
             return bio;
@@ -129,7 +141,7 @@ public class UserController {
         public UserDto toUserDto() {
             UserDto dto = new UserDto();
             dto.setUsername(username);
-            dto.setName(name);
+            dto.setDateOfBirth(dateOfBirth);
             dto.setBio(bio);
             dto.setProfilePicture(profilePicture);
             return dto;
