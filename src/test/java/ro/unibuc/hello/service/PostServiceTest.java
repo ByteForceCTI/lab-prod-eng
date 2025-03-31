@@ -11,9 +11,12 @@ import ro.unibuc.hello.data.FriendshipEntity;
 import ro.unibuc.hello.data.FriendshipEntity.FriendshipStatus;
 import ro.unibuc.hello.data.PostEntity;
 import ro.unibuc.hello.data.PostEntity.PostVisibility;
+import ro.unibuc.hello.data.UserEntity;
 import ro.unibuc.hello.data.repository.PostRepository;
+import ro.unibuc.hello.data.repository.UserRepository;
 import ro.unibuc.hello.dto.PostDto;
 import ro.unibuc.hello.exception.EntityNotFoundException;
+import ro.unibuc.hello.exception.ForbiddenAccessException;
 import ro.unibuc.hello.service.CommentService;
 import ro.unibuc.hello.service.FriendshipService;
 import ro.unibuc.hello.service.LikeService;
@@ -39,6 +42,9 @@ class PostServiceTest {
 
     @Mock
     private LikeService likeService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private FriendshipService friendshipService;
@@ -343,5 +349,180 @@ class PostServiceTest {
         );
         assertTrue(exception.getMessage().contains("Post"));
     }
+ // TODO: check comments
+    @Test
+    void testUpdatePostAuth_Success() throws EntityNotFoundException {
+        // Arrange: Create an existing post owned by user1.
+        PostEntity existingPost = new PostEntity();
+        existingPost.setId("1");
+        existingPost.setUserId("user1");
+        existingPost.setContent("Old content");
+        existingPost.setMediaUrl("http://example.com/old");
+        existingPost.setVisibility(PostVisibility.PUBLIC);
+        existingPost.setCreatedAt(new Date());
+        existingPost.setUpdatedAt(new Date());
+        
+        // Create an update request.
+        PostEntity updateRequest = new PostEntity();
+        updateRequest.setContent("New content");
+        updateRequest.setMediaUrl("http://example.com/new");
+        
+        // Arrange mocks: post exists and user exists.
+        when(postRepository.findById("1")).thenReturn(Optional.of(existingPost));
+        UserEntity user = new UserEntity();
+        user.setId("user1");
+        when(userRepository.findById("user1")).thenReturn(Optional.of(user));
+        
+        // Simulate saving the updated post.
+        PostEntity savedPost = new PostEntity();
+        savedPost.setId("1");
+        savedPost.setUserId("user1");
+        savedPost.setContent("New content");
+        savedPost.setMediaUrl("http://example.com/new");
+        savedPost.setUpdatedAt(new Date());
+        when(postRepository.save(any(PostEntity.class))).thenReturn(savedPost);
+        
+        // Act
+        PostEntity result = postService.updatePostAuth("1", "user1", updateRequest);
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals("New content", result.getContent());
+        assertEquals("http://example.com/new", result.getMediaUrl());
+    }
 
+    @Test
+    void testUpdatePostAuth_PostNotFound() {
+        // Arrange: Post does not exist.
+        when(postRepository.findById("1")).thenReturn(Optional.empty());
+        UserEntity user = new UserEntity();
+        user.setId("user1");
+        when(userRepository.findById("user1")).thenReturn(Optional.of(user));
+        
+        PostEntity updateRequest = new PostEntity();
+        updateRequest.setContent("New content");
+        
+        // Act & Assert
+        assertThrows(EntityNotFoundException.class, () -> 
+            postService.updatePostAuth("1", "user1", updateRequest)
+        );
+    }
+    
+    @Test
+    void testUpdatePostAuth_UserNotFound() {
+        // Arrange: Post exists but user is not found.
+        PostEntity existingPost = new PostEntity();
+        existingPost.setId("1");
+        existingPost.setUserId("user1");
+        when(postRepository.findById("1")).thenReturn(Optional.of(existingPost));
+        when(userRepository.findById("user1")).thenReturn(Optional.empty());
+        
+        PostEntity updateRequest = new PostEntity();
+        updateRequest.setContent("New content");
+        
+        // Act & Assert
+        assertThrows(EntityNotFoundException.class, () -> 
+            postService.updatePostAuth("1", "user1", updateRequest)
+        );
+    }
+    
+    @Test
+    void testUpdatePostAuth_Forbidden() {
+        // Arrange: Post exists with owner "user2", but current user is "user1".
+        PostEntity existingPost = new PostEntity();
+        existingPost.setId("1");
+        existingPost.setUserId("user2");
+        when(postRepository.findById("1")).thenReturn(Optional.of(existingPost));
+        
+        UserEntity user = new UserEntity();
+        user.setId("user1");
+        when(userRepository.findById("user1")).thenReturn(Optional.of(user));
+        
+        PostEntity updateRequest = new PostEntity();
+        updateRequest.setContent("New content");
+        
+        // Act & Assert
+        assertThrows(ForbiddenAccessException.class, () -> 
+            postService.updatePostAuth("1", "user1", updateRequest)
+        );
+    }
+    
+    // --------------------------
+    // New tests for deletePostAuth
+    // --------------------------
+    
+    @Test
+    void testDeletePostAuth_Success() throws EntityNotFoundException {
+        // Arrange: Post exists and is owned by user1.
+        PostEntity existingPost = new PostEntity();
+        existingPost.setId("1");
+        existingPost.setUserId("user1");
+        when(postRepository.findById("1")).thenReturn(Optional.of(existingPost));
+        
+        // Arrange: user exists.
+        UserEntity user = new UserEntity();
+        user.setId("user1");
+        when(userRepository.findById("user1")).thenReturn(Optional.of(user));
+        
+        // Setup delete operations (simulate successful deletion).
+        doNothing().when(postRepository).deleteById("1");
+        doNothing().when(commentService).deletePostComments("1");
+        doNothing().when(likeService).deletePostLikes("1");
+        
+        // Act
+        postService.deletePostAuth("1", "user1");
+        
+        // Assert: Verify delete methods are called.
+        verify(postRepository, times(1)).deleteById("1");
+        verify(commentService, times(1)).deletePostComments("1");
+        verify(likeService, times(1)).deletePostLikes("1");
+    }
+    
+    @Test
+    void testDeletePostAuth_PostNotFound() {
+        // Arrange: Post does not exist.
+        when(postRepository.findById("1")).thenReturn(Optional.empty());
+        UserEntity user = new UserEntity();
+        user.setId("user1");
+        when(userRepository.findById("user1")).thenReturn(Optional.of(user));
+        
+        // Act & Assert
+        assertThrows(EntityNotFoundException.class, () -> 
+            postService.deletePostAuth("1", "user1")
+        );
+    }
+    
+    @Test
+    void testDeletePostAuth_UserNotFound() {
+        // Arrange: Post exists.
+        PostEntity existingPost = new PostEntity();
+        existingPost.setId("1");
+        existingPost.setUserId("user1");
+        when(postRepository.findById("1")).thenReturn(Optional.of(existingPost));
+        // User not found.
+        when(userRepository.findById("user1")).thenReturn(Optional.empty());
+        
+        // Act & Assert
+        assertThrows(EntityNotFoundException.class, () -> 
+            postService.deletePostAuth("1", "user1")
+        );
+    }
+    
+    @Test
+    void testDeletePostAuth_Forbidden() {
+        // Arrange: Post exists with owner "user2" while current user is "user1".
+        PostEntity existingPost = new PostEntity();
+        existingPost.setId("1");
+        existingPost.setUserId("user2");
+        when(postRepository.findById("1")).thenReturn(Optional.of(existingPost));
+        
+        UserEntity user = new UserEntity();
+        user.setId("user1");
+        when(userRepository.findById("user1")).thenReturn(Optional.of(user));
+        
+        // Act & Assert
+        assertThrows(ForbiddenAccessException.class, () -> 
+            postService.deletePostAuth("1", "user1")
+        );
+    }
 }
