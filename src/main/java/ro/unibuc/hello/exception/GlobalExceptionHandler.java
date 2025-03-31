@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
@@ -19,6 +20,34 @@ public class GlobalExceptionHandler {
         logger.error("Entity not found: {} - Request: {}", ex.getMessage(), request.getDescription(false));
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
+
+    // map UnauthorizedException to HTTP 401 code 
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<String> handleUnauthorizedException(UnauthorizedException ex, WebRequest request) {
+        logger.error("Unauthorized action: {} - Request: {}", ex.getMessage(), request.getDescription(false));
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
+     // map UnauthorizedException to HTTP 403 code 
+     @ExceptionHandler(ForbiddenAccessException.class)
+     public ResponseEntity<String> handleForbiddenAccessException(ForbiddenAccessException ex, WebRequest request) {
+         logger.error("Forbidden action: {} - Request: {}", ex.getMessage(), request.getDescription(false));
+         return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
+     }
+
+     // map MissingRequestHeaderException to HTTP 401 code
+     @ExceptionHandler(MissingRequestHeaderException.class)
+     public ResponseEntity<String> handleMissingRequestHeaderException(MissingRequestHeaderException ex, WebRequest request) {
+        logger.error("Missing header: {} - Request: {}", ex.getMessage(), request.getDescription(false));
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
+    // map InvalidAuthTokenException to HTTP 401 code
+    @ExceptionHandler(InvalidAuthTokenException.class)
+    public ResponseEntity<String> handleInvalidAuthTokenException(InvalidAuthTokenException ex, WebRequest request) {
+       logger.error("Invalid auth token: {} - Request: {}", ex.getMessage(), request.getDescription(false));
+       return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
+   }
 
     // map any untreated exception to error 500
     @ExceptionHandler(Exception.class)

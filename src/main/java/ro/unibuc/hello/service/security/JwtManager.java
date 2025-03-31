@@ -6,6 +6,8 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import ro.unibuc.hello.exception.InvalidAuthTokenException;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +41,7 @@ public class JwtManager {
                                 .getBody();
             return claims.getSubject();
         } catch (JwtException e) {
-            throw new RuntimeException("Invalid token", e);
+            throw new InvalidAuthTokenException("Invalid token");
         }
     }
 }

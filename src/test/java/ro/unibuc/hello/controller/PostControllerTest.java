@@ -12,14 +12,18 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import ro.unibuc.hello.data.PostEntity;
 import ro.unibuc.hello.data.PostEntity.PostVisibility;
 import ro.unibuc.hello.dto.PostDto;
+import ro.unibuc.hello.dto.UserDto;
 import ro.unibuc.hello.exception.EntityNotFoundException;
 import ro.unibuc.hello.exception.GlobalExceptionHandler;
+import ro.unibuc.hello.exception.ForbiddenAccessException;
 import ro.unibuc.hello.service.PostService;
+import ro.unibuc.hello.service.implementation.UserServiceImpl;
 
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -40,29 +44,51 @@ class PostControllerTest {
     @Mock
     private PostService postService;
 
+    @Mock
+    private UserServiceImpl userService;
+
     @InjectMocks
     private PostController postController;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
+    // TODO: Rewrite comments
+    
+    // Define a dummy valid token and a valid user to be returned for that token.
+    private final String validToken = "validToken";
+    private UserDto validUser;
+    private UserDto forbiddenUser;
+
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(postController).setControllerAdvice(new GlobalExceptionHandler()).build();
+        // Build the MockMvc with the GlobalExceptionHandler for error mapping.
+        mockMvc = MockMvcBuilders.standaloneSetup(postController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
         objectMapper = new ObjectMapper();
+        validUser = new UserDto();
+        validUser.setId("user1");
+        validUser.setUsername("testUser");
+
+        forbiddenUser = new UserDto();
+        forbiddenUser.setId("user2");
+        forbiddenUser.setUsername("forbiddenUser");
     }
 
     @Test
     void test_createPost() throws Exception {
-        // arrange: create a sample request for creating a new post
+        // Arrange: simulate that the provided valid token returns a valid user.
+        when(userService.getUserFromToken(validToken)).thenReturn(validUser);
+
+        // Prepare a sample post request. Note: we don't set userId because the controller sets it from the token.
         PostEntity postRequest = new PostEntity();
-        postRequest.setUserId("user1");
         postRequest.setContent("Test content");
         postRequest.setMediaUrl("http://example.com/media");
         postRequest.setVisibility(PostVisibility.PUBLIC);
 
-        // simulate the service returning the created post with its fields set
+        // Simulate the service returning the created post.
         PostEntity createdPost = new PostEntity();
         createdPost.setId("1");
         createdPost.setUserId("user1");
@@ -74,11 +100,12 @@ class PostControllerTest {
 
         when(postService.createPost(any(PostEntity.class))).thenReturn(createdPost);
 
-        // assert: send the POST request and check the response json
+        // Act & Assert: send the POST request with a valid Authorization header.
         mockMvc.perform(post("/posts")
                 .content(objectMapper.writeValueAsString(postRequest))
+                .header("Authorization", "Bearer " + validToken)
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk())
+            .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value("1"))
             .andExpect(jsonPath("$.content").value("Test content"))
             .andExpect(jsonPath("$.userId").value("user1"));
@@ -86,7 +113,10 @@ class PostControllerTest {
 
     @Test
     void test_getAllPosts() throws Exception {
-        // arrange: create a list of PostDto objects that would be returned for visible posts
+        // Arrange: simulate valid authentication.
+        when(userService.getUserFromToken(validToken)).thenReturn(validUser);
+
+        // Create sample PostDto objects.
         PostDto postDto1 = new PostDto();
         postDto1.setId("1");
         postDto1.setUserId("user1");
@@ -104,10 +134,12 @@ class PostControllerTest {
         postDto2.setLikeCount(2);
 
         List<PostDto> posts = Arrays.asList(postDto1, postDto2);
-        when(postService.getVisiblePosts(null)).thenReturn(posts);
+        // Note: the controller uses the user ID from the authenticated user.
+        when(postService.getVisiblePosts("user1")).thenReturn(posts);
 
-        // assert: send a GET request and verify the returned json array
-        mockMvc.perform(get("/posts"))
+        // Act & Assert: perform GET request with a valid Authorization header.
+        mockMvc.perform(get("/posts")
+                .header("Authorization", "Bearer " + validToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value("1"))
             .andExpect(jsonPath("$[0].content").value("Post 1 content"))
@@ -117,7 +149,9 @@ class PostControllerTest {
 
     @Test
     void test_getPostById() throws Exception {
-        // arrange: creates a sample PostDto that represents the detailed post information
+        // Arrange: valid authentication
+        when(userService.getUserFromToken(validToken)).thenReturn(validUser);
+
         PostDto postDto = new PostDto();
         postDto.setId("1");
         postDto.setUserId("user1");
@@ -126,10 +160,12 @@ class PostControllerTest {
         postDto.setCommentCount(2);
         postDto.setLikeCount(3);
 
-        when(postService.getPostById("1", null)).thenReturn(postDto);
+        // The controller passes the authenticated user's ID.
+        when(postService.getPostById("1", "user1")).thenReturn(postDto);
 
-        // assert: send a GET request by id and verify the response json
-        mockMvc.perform(get("/posts/{id}", "1"))
+        // Act & Assert: perform GET by id with Authorization header.
+        mockMvc.perform(get("/posts/{id}", "1")
+                .header("Authorization", "Bearer " + validToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value("1"))
             .andExpect(jsonPath("$.content").value("Detailed post content"));
@@ -137,24 +173,28 @@ class PostControllerTest {
 
     @Test
     void test_getPostById_notFound() throws Exception {
-        // arrange: simulate the service throwing an exception for a non-existent or inaccessible post
-        when(postService.getPostById("1", null))
+        // Arrange: valid authentication.
+        when(userService.getUserFromToken(validToken)).thenReturn(validUser);
+
+        when(postService.getPostById("1", "user1"))
             .thenThrow(new EntityNotFoundException("Post not found"));
 
-        // assert: check for a 404 Not Found status
-        mockMvc.perform(get("/posts/{id}", "1"))
+        // Act & Assert: expect a 404 Not Found.
+        mockMvc.perform(get("/posts/{id}", "1")
+                .header("Authorization", "Bearer " + validToken))
             .andExpect(status().isNotFound());
     }
 
     @Test
     void test_updatePost() throws Exception {
-        // arrange: create an update request for a post
+        // Arrange: valid authentication.
+        when(userService.getUserFromToken(validToken)).thenReturn(validUser);
+
         PostEntity updateRequest = new PostEntity();
         updateRequest.setContent("Updated content");
         updateRequest.setMediaUrl("http://example.com/updated");
         updateRequest.setVisibility(PostVisibility.PUBLIC);
 
-        // simulated updated post entity returned by the service
         PostEntity updatedPost = new PostEntity();
         updatedPost.setId("1");
         updatedPost.setUserId("user1");
@@ -163,11 +203,14 @@ class PostControllerTest {
         updatedPost.setVisibility(PostVisibility.PUBLIC);
         updatedPost.setUpdatedAt(new Date());
 
-        when(postService.updatePost(eq("1"), any(PostEntity.class))).thenReturn(updatedPost);
+        // Expect updatePostAuth instead of updatePost.
+        when(postService.updatePostAuth(eq("1"), eq(validUser.getId()), any(PostEntity.class)))
+            .thenReturn(updatedPost);
 
-        // assert: send a PUT request and verify the updated post json data
+        // Act & Assert: perform PUT with Authorization header.
         mockMvc.perform(put("/posts/{id}", "1")
                 .content(objectMapper.writeValueAsString(updateRequest))
+                .header("Authorization", "Bearer " + validToken)
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value("1"))
@@ -175,42 +218,166 @@ class PostControllerTest {
     }
 
     @Test
-    void test_deletePost() throws Exception {
-        // arrange: mock the service delete action
-        doNothing().when(postService).deletePost("1");
-
-        // assert: send a DELETE request and verify ok status
-        mockMvc.perform(delete("/posts/{id}", "1"))
-            .andExpect(status().isOk());
-
-        verify(postService, times(1)).deletePost("1");
-    }
-
-    @Test
     void test_updatePost_notFound() throws Exception {
-        // arrange: create an update request for a non-existent post.
+        // Arrange: valid authentication.
+        when(userService.getUserFromToken(validToken)).thenReturn(validUser);
+
         PostEntity updateRequest = new PostEntity();
         updateRequest.setContent("Updated content");
 
-        when(postService.updatePost(eq("1"), any(PostEntity.class)))
+        when(postService.updatePostAuth(eq("1"), eq(validUser.getId()), any(PostEntity.class)))
             .thenThrow(new EntityNotFoundException("Post not found"));
 
-        // assert: send a PUT request and expect a 404 Not Found
+        // Act & Assert: perform PUT with Authorization header expecting 404.
         mockMvc.perform(put("/posts/{id}", "1")
                 .content(objectMapper.writeValueAsString(updateRequest))
+                .header("Authorization", "Bearer " + validToken)
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound());
     }
 
     @Test
-    void test_deletePost_notFound() throws Exception {
-        // arrange: simulate that the deleted post does not exist
-        doThrow(new EntityNotFoundException("Post not found")).when(postService).deletePost("1");
+    void test_deletePost() throws Exception {
+        // Arrange: valid authentication.
+        when(userService.getUserFromToken(validToken)).thenReturn(validUser);
+        doNothing().when(postService).deletePostAuth("1", validUser.getId());
 
-        // assert: send a DELETE request and expect 404 Not Found
-        mockMvc.perform(delete("/posts/{id}", "1"))
+        // Act & Assert: perform DELETE with Authorization header.
+        mockMvc.perform(delete("/posts/{id}", "1")
+                .header("Authorization", "Bearer " + validToken))
+            .andExpect(status().isNoContent());
+
+        verify(postService, times(1)).deletePostAuth("1", validUser.getId());
+    }
+
+    @Test
+    void test_deletePost_notFound() throws Exception {
+        // Arrange: valid authentication.
+        when(userService.getUserFromToken(validToken)).thenReturn(validUser);
+        doThrow(new EntityNotFoundException("Post not found")).when(postService)
+            .deletePostAuth("1", validUser.getId());
+
+        // Act & Assert: perform DELETE with Authorization header expecting 404.
+        mockMvc.perform(delete("/posts/{id}", "1")
+                .header("Authorization", "Bearer " + validToken))
             .andExpect(status().isNotFound());
     }
 
+    // ------------------------------
+    // New tests for user==null branches
+    // ------------------------------
+
+    @Test
+    void test_createPost_userNull() throws Exception {
+        // Simulate that getUserFromToken returns null.
+        when(userService.getUserFromToken(validToken)).thenReturn(null);
+
+        PostEntity postRequest = new PostEntity();
+        postRequest.setContent("Test content");
+        postRequest.setMediaUrl("http://example.com/media");
+        postRequest.setVisibility(PostVisibility.PUBLIC);
+
+        mockMvc.perform(post("/posts")
+                .content(objectMapper.writeValueAsString(postRequest))
+                .header("Authorization", "Bearer " + validToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void test_getAllPosts_userNull() throws Exception {
+        when(userService.getUserFromToken(validToken)).thenReturn(null);
+
+        mockMvc.perform(get("/posts")
+                .header("Authorization", "Bearer " + validToken))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void test_getPostById_userNull() throws Exception {
+        when(userService.getUserFromToken(validToken)).thenReturn(null);
+
+        mockMvc.perform(get("/posts/{id}", "1")
+                .header("Authorization", "Bearer " + validToken))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void test_updatePost_userNull() throws Exception {
+        when(userService.getUserFromToken(validToken)).thenReturn(null);
+        PostEntity updateRequest = new PostEntity();
+        updateRequest.setContent("Updated content");
+        updateRequest.setMediaUrl("http://example.com/updated");
+        updateRequest.setVisibility(PostVisibility.PUBLIC);
+
+        mockMvc.perform(put("/posts/{id}", "1")
+                .content(objectMapper.writeValueAsString(updateRequest))
+                .header("Authorization", "Bearer " + validToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void test_deletePost_userNull() throws Exception {
+        when(userService.getUserFromToken(validToken)).thenReturn(null);
+
+        mockMvc.perform(delete("/posts/{id}", "1")
+                .header("Authorization", "Bearer " + validToken))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void test_deletePost_forbidden() throws Exception {
+        // Arrange: simulate that the authenticated user is forbidden from deleting the post.
+        when(userService.getUserFromToken(validToken)).thenReturn(forbiddenUser);
+        // Simulate that deletePostAuth throws a ForbiddenAccessException.
+        doThrow(new ForbiddenAccessException("User is not the owner of this post."))
+            .when(postService).deletePostAuth("1", forbiddenUser.getId());
+        
+        // Act & Assert: perform DELETE and expect HTTP 403 Forbidden.
+        mockMvc.perform(delete("/posts/{id}", "1")
+                .header("Authorization", "Bearer " + validToken))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void test_updatePost_forbidden() throws Exception {
+        // Arrange: simulate that the authenticated user is forbidden from updating the post.
+        when(userService.getUserFromToken(validToken)).thenReturn(forbiddenUser);
+        
+        PostEntity updateRequest = new PostEntity();
+        updateRequest.setContent("Updated content");
+        updateRequest.setMediaUrl("http://example.com/updated");
+        updateRequest.setVisibility(PostVisibility.PUBLIC);
+        
+        // Simulate that updatePostAuth throws a ForbiddenAccessException.
+        when(postService.updatePostAuth(eq("1"), eq(forbiddenUser.getId()), any(PostEntity.class)))
+            .thenThrow(new ForbiddenAccessException("User is not the owner of this post."));
+        
+        // Act & Assert: perform PUT and expect HTTP 403 Forbidden.
+        mockMvc.perform(put("/posts/{id}", "1")
+                .content(objectMapper.writeValueAsString(updateRequest))
+                .header("Authorization", "Bearer " + validToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void test_authHeader_Null() throws Exception { // because all requests go through GlobalExceptionHandler, behaviour should be the same for all
+        when(userService.getUserFromToken(validToken)).thenReturn(null);
+
+        mockMvc.perform(delete("/posts/{id}", "1")
+                .header("NoAuth", "Test "))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void test_authHeader_bad() throws Exception {
+        when(userService.getUserFromToken(validToken)).thenReturn(null);
+
+        mockMvc.perform(delete("/posts/{id}", "1")
+                .header("Authorization", "Beaarer " + validToken))
+            .andExpect(status().isUnauthorized());
+    }
 
 }
