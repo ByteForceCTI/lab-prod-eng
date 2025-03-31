@@ -39,38 +39,38 @@ public class UserController {
          return ResponseEntity.ok(userDto);
     }
 
-    @GetMapping("/profile/{username}")
-    public ResponseEntity<UserDto> getUserProfile(@PathVariable String username) {
-         UserDto userDto = userService.getUserProfile(username);
-         return ResponseEntity.ok(userDto);
-    }
+    // @GetMapping("/profile/{username}")
+    // public ResponseEntity<UserDto> getUserProfile(@PathVariable String username) {
+    //      UserDto userDto = userService.getUserProfile(username);
+    //      return ResponseEntity.ok(userDto);
+    // }
 
     @PutMapping("/{userId}/username")
-    public ResponseEntity<UserDto> updateUsername(@PathVariable String userId, @RequestBody UpdateUsernameRequest request) {
+    public ResponseEntity<UserDto> updateUsername(@PathVariable("userId") String userId, @RequestBody UpdateUsernameRequest request) {
          UserDto userDto = userService.updateUsername(userId, request.getNewUsername());
          return ResponseEntity.ok(userDto);
     }
 
     @PutMapping("/{userId}/password")
-    public ResponseEntity<UserDto> updatePassword(@PathVariable String userId, @RequestBody UpdatePasswordRequest request) {
+    public ResponseEntity<UserDto> updatePassword(@PathVariable("userId") String userId, @RequestBody UpdatePasswordRequest request) {
          UserDto userDto = userService.updatePassword(userId, request.getNewPassword());
          return ResponseEntity.ok(userDto);
     }
 
     @PutMapping("/{userId}/profile-picture")
-    public ResponseEntity<UserDto> updateProfilePicture(@PathVariable String userId, @RequestBody UpdateProfilePictureRequest request) {
+    public ResponseEntity<UserDto> updateProfilePicture(@PathVariable("userId") String userId, @RequestBody UpdateProfilePictureRequest request) {
          UserDto userDto = userService.updateProfilePicture(userId, request.getNewProfilePicture());
          return ResponseEntity.ok(userDto);
     }
 
     @PutMapping("/{userId}/bio")
-    public ResponseEntity<UserDto> updateBio(@PathVariable String userId, @RequestBody UpdateBioRequest request) {
+    public ResponseEntity<UserDto> updateBio(@PathVariable("userId") String userId, @RequestBody UpdateBioRequest request) {
          UserDto userDto = userService.updateBio(userId, request.getNewBio());
          return ResponseEntity.ok(userDto);
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable String userId) {
+    public ResponseEntity<Void> deleteUser(@PathVariable("userId") String userId) {
          userService.deleteUser(userId);
          return ResponseEntity.noContent().build();
     }
@@ -81,12 +81,23 @@ public class UserController {
          return ResponseEntity.ok(users);
     }
 
-    @GetMapping("/id/{userId}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable String userId) {
-         UserDto userDto = userService.getUserById(userId);
-         return ResponseEntity.ok(userDto);
-    }
+    // @GetMapping("/id/{userId}")
+    // public ResponseEntity<UserDto> getUserById(@PathVariable String userId) {
+    //      UserDto userDto = userService.getUserById(userId);
+    //      return ResponseEntity.ok(userDto);
+    // }
 
+    @GetMapping("/id/{userId}")
+    public ResponseEntity<UserDto> getUserById(@PathVariable("userId") String userId) {
+    UserDto userDto = userService.getUserById(userId);
+    return ResponseEntity.ok(userDto);
+}
+
+    @GetMapping("/profile/{username}")
+    public ResponseEntity<UserDto> getUserProfile(@PathVariable("username") String username) {
+    UserDto userDto = userService.getUserProfile(username);
+    return ResponseEntity.ok(userDto);
+}
     public static class CreateUserRequest {
         private String username;
         private String name;

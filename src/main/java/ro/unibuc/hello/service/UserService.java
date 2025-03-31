@@ -28,4 +28,6 @@ public interface UserService {
     UserDto getUserById(String userId);
 
     UserDto getUserByUsername(String username);
+
+    void deleteAllUsers();
 }

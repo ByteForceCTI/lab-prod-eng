@@ -28,6 +28,7 @@ public class UserServiceImpl implements UserService {
     
     private UserDto convertToDto(UserEntity user) {
         UserDto dto = new UserDto();
+        dto.setId(user.getId());
         dto.setUsername(user.getUsername());
         dto.setBio(user.getBio());
         dto.setProfilePicture(user.getProfilePicture());
@@ -35,19 +36,34 @@ public class UserServiceImpl implements UserService {
         return dto;
     }
     
+    // @Override
+    // public UserDto createUser(UserDto userDto, String email, String password) {
+    //      UserEntity userEntity = new UserEntity();
+    //      userEntity.setUsername(userDto.getUsername());
+    //      userEntity.setBio(userDto.getBio());
+    //      userEntity.setProfilePicture(userDto.getProfilePicture());
+    //     userEntity.setDateOfBirth(userDto.getDateOfBirth());
+    //     userEntity.setEmail(email);
+    //      userEntity.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+         
+    //      userRepository.save(userEntity);
+    //      return convertToDto(userEntity);
+    // }
+
     @Override
     public UserDto createUser(UserDto userDto, String email, String password) {
-         UserEntity userEntity = new UserEntity();
-         userEntity.setUsername(userDto.getUsername());
-         userEntity.setBio(userDto.getBio());
-         userEntity.setProfilePicture(userDto.getProfilePicture());
-        userEntity.setDateOfBirth(userDto.getDateOfBirth());
-        userEntity.setEmail(email);
-         userEntity.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
-         
-         userRepository.save(userEntity);
-         return convertToDto(userEntity);
-    }
+    UserEntity userEntity = new UserEntity();
+    userEntity.setUsername(userDto.getUsername());
+    userEntity.setBio(userDto.getBio());
+    userEntity.setProfilePicture(userDto.getProfilePicture());
+    userEntity.setDateOfBirth(userDto.getDateOfBirth());
+    userEntity.setEmail(email);
+    userEntity.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+
+    UserEntity savedEntity = userRepository.save(userEntity);
+    return convertToDto(savedEntity);
+}
+
     
     @Override
     public UserDto login(String username, String password) {
@@ -179,4 +195,13 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("User not found");
         }
     }
+  
+    public UserEntity getUserEntityById(String username){
+        return userRepository.findByUsername(username).get();
+    }
+
+    public void deleteAllUsers() {
+        userRepository.deleteAll();
+    }
+
 }
