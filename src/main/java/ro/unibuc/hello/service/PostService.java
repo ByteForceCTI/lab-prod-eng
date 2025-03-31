@@ -10,10 +10,13 @@ import org.springframework.stereotype.Service;
 import ro.unibuc.hello.data.FriendshipEntity;
 import ro.unibuc.hello.data.FriendshipEntity.FriendshipStatus;
 import ro.unibuc.hello.data.PostEntity;
+import ro.unibuc.hello.data.UserEntity;
 import ro.unibuc.hello.data.PostEntity.PostVisibility;
 import ro.unibuc.hello.data.repository.PostRepository;
+import ro.unibuc.hello.data.repository.UserRepository;
 import ro.unibuc.hello.dto.PostDto;
 import ro.unibuc.hello.exception.EntityNotFoundException;
+import ro.unibuc.hello.exception.ForbiddenAccessException;
 import ro.unibuc.hello.service.CommentService;
 
 @Service
@@ -21,6 +24,9 @@ public class PostService {
 
     @Autowired
     private PostRepository postRepository;
+
+    @Autowired
+    private UserRepository userRepository;
     
     @Autowired
     private CommentService commentService;
@@ -116,6 +122,29 @@ public class PostService {
         }
     }
 
+    // function for post update (with authentication)
+    public PostEntity updatePostAuth(String postId, String userId, PostEntity updatedPost) throws EntityNotFoundException {
+        Optional<PostEntity> existingPostOpt = postRepository.findById(postId);
+        Optional <UserEntity> currentUser = userRepository.findById(userId);
+
+        if (!existingPostOpt.isPresent()) {
+            throw new EntityNotFoundException("Post not found");
+        } else {
+            if(!currentUser.isPresent()){
+                throw new EntityNotFoundException("User not found");
+            }
+            if(existingPostOpt.get().getUserId().equals(currentUser.get().getId())){
+                PostEntity existingPost = existingPostOpt.get();
+                existingPost.setContent(updatedPost.getContent());
+                existingPost.setMediaUrl(updatedPost.getMediaUrl());
+                existingPost.setUpdatedAt(new java.util.Date());
+                return postRepository.save(existingPost);
+            } else {
+                throw new ForbiddenAccessException("User is not the owner of this post.");
+            }
+        }
+    }
+
     // function to delete a post and its associated data
     public void deletePost(String id) throws EntityNotFoundException {
         if (!postRepository.existsById(id)) {
@@ -124,5 +153,26 @@ public class PostService {
         postRepository.deleteById(id);
         commentService.deletePostComments(id);
         likeService.deletePostLikes(id);
+    }
+
+    // function to delete a post and its associated data (with authentication)
+    public void deletePostAuth(String postId, String userId) throws EntityNotFoundException {
+        Optional <PostEntity> currentPost = postRepository.findById(postId);
+        Optional <UserEntity> currentUser = userRepository.findById(userId);
+
+        if (!currentPost.isPresent()) {
+            throw new EntityNotFoundException("Post not found");
+        } else {
+            if(!currentUser.isPresent()){
+                throw new EntityNotFoundException("User does not exist");
+            }
+            if(currentPost.get().getUserId().equals(currentUser.get().getId())){
+                postRepository.deleteById(postId);
+                commentService.deletePostComments(postId);
+                likeService.deletePostLikes(postId);
+            } else {
+                throw new ForbiddenAccessException("User is not the owner of this post.");
+            }
+        }
     }
 }
