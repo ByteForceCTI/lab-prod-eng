@@ -8,6 +8,8 @@ public interface UserService {
     UserDto createUser(UserDto userDto, String email, String password);
 
     UserDto login(String username, String password);
+    
+    String loginJWT(String username, String password);
 
     UserDto getUserProfile(String username);
 

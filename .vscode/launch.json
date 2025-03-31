@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "KeyGenerator",
+            "request": "launch",
+            "mainClass": "ro.unibuc.hello.keygen.KeyGenerator",
+            "projectName": "hello-lab-prod-eng"
+        },
+        {
+            "type": "java",
             "name": "Service",
             "request": "launch",
             "mainClass": "ro.unibuc.hello.HelloApplication",
