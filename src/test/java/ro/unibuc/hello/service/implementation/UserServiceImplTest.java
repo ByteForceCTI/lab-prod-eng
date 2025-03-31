@@ -10,26 +10,23 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mindrot.jbcrypt.BCrypt;
-
 import ro.unibuc.hello.data.UserEntity;
 import ro.unibuc.hello.data.repository.UserRepository;
-import ro.unibuc.hello.service.*;
-import ro.unibuc.hello.service.implementation.UserServiceImpl;
-import ro.unibuc.hello.dto.*;
-
-
-import java.time.LocalDate;
-import java.util.Date;
+import ro.unibuc.hello.dto.UserDto;
+import ro.unibuc.hello.service.security.JwtManager;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.Mockito.when;
-
 public class UserServiceImplTest {
+
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private JwtManager jwtManager;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -38,6 +35,8 @@ public class UserServiceImplTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
     }
+
+    // Existing tests for createUser, login, updateUsername, etc.
 
     @Test
     public void testAddUser() {
@@ -249,5 +248,74 @@ public class UserServiceImplTest {
         });
         assertEquals("User not found", exception.getMessage());
     }
-}
 
+    // New tests for JWT functionality
+
+    @Test
+    public void testLoginJWTSuccess() {
+        UserEntity user = new UserEntity();
+        user.setId("1");
+        user.setUsername("testUser");
+        user.setPasswordHash(BCrypt.hashpw("password123", BCrypt.gensalt()));
+
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
+        // Mock JwtManager behavior to return a dummy token
+        when(jwtManager.generateToken("testUser")).thenReturn("dummyJWT");
+
+        String token = userService.loginJWT("testUser", "password123");
+        assertEquals("dummyJWT", token);
+        verify(jwtManager, times(1)).generateToken("testUser");
+    }
+
+    @Test
+    public void testLoginJWTWrongPassword() {
+        UserEntity user = new UserEntity();
+        user.setId("1");
+        user.setUsername("testUser");
+        user.setPasswordHash(BCrypt.hashpw("password123", BCrypt.gensalt()));
+
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
+
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            userService.loginJWT("testUser", "wrongPassword");
+        });
+        assertEquals("Wrong password", exception.getMessage());
+        verify(jwtManager, never()).generateToken(any());
+    }
+
+    @Test
+    public void testLoginJWTUserNotFound() {
+        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            userService.loginJWT("nonexistent", "password");
+        });
+        assertEquals("User not found", exception.getMessage());
+    }
+
+    @Test
+    public void testGetUserFromTokenSuccess() {
+        UserEntity user = new UserEntity();
+        user.setId("1");
+        user.setUsername("testUser");
+        user.setBio("Bio");
+        user.setProfilePicture("pic.jpg");
+        user.setDateOfBirth(new Date());
+
+        // Simulate extracting username from token
+        when(jwtManager.extractUsername("dummyToken")).thenReturn("testUser");
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
+
+        UserDto result = userService.getUserFromToken("dummyToken");
+        assertEquals("testUser", result.getUsername());
+    }
+
+    @Test
+    public void testGetUserFromTokenInvalidToken() {
+        // Simulate jwtManager throwing exception for an invalid token
+        when(jwtManager.extractUsername("invalidToken")).thenThrow(new RuntimeException("Invalid token"));
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            userService.getUserFromToken("invalidToken");
+        });
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
+}

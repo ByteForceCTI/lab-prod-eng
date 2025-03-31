@@ -3,9 +3,11 @@ package ro.unibuc.hello.service.implementation;
 import ro.unibuc.hello.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import ro.unibuc.hello.data.UserEntity;
 import ro.unibuc.hello.dto.UserDto;
 import ro.unibuc.hello.data.repository.UserRepository;
+import ro.unibuc.hello.service.security.JwtManager;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.List;
@@ -16,10 +18,12 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     
     private final UserRepository userRepository;
+    private final JwtManager jwtManager;
     
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, JwtManager jwtManager) {
          this.userRepository = userRepository;
+         this.jwtManager = jwtManager;
     }
     
     private UserDto convertToDto(UserEntity user) {
@@ -74,6 +78,26 @@ public class UserServiceImpl implements UserService {
          } else {
               throw new RuntimeException("User not found");
          }
+    }
+
+    @Override
+    public String loginJWT(String username, String password) {
+         Optional<UserEntity> userOptional = userRepository.findByUsername(username);
+         if(userOptional.isPresent()) {
+              UserEntity user = userOptional.get();
+              if(BCrypt.checkpw(password, user.getPasswordHash())) {
+                  return jwtManager.generateToken(user.getUsername());
+              } else {
+                  throw new RuntimeException("Wrong password");
+              }
+         } else {
+              throw new RuntimeException("User not found");
+         }
+    }
+
+    public UserDto getUserFromToken(String token) {
+        String username = jwtManager.extractUsername(token);
+        return getUserByUsername(username);
     }
     
     @Override
@@ -171,11 +195,10 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("User not found");
         }
     }
-
+  
     public UserEntity getUserEntityById(String username){
         return userRepository.findByUsername(username).get();
     }
-
 
     public void deleteAllUsers() {
         userRepository.deleteAll();
