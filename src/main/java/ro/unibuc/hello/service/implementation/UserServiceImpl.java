@@ -155,4 +155,8 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("User not found");
         }
     }
+
+    public UserEntity getUserEntityById(String username){
+        return userRepository.findByUsername(username).get();
+    }
 }
