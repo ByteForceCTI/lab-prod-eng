@@ -24,9 +24,9 @@ pipeline {
                     echo "Git Tags: ${GIT_TAG}"
                     echo "Version: ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}"
                     
-                    def newMinorVersion = MINOR_VERSION.toInteger() + 1
-                sh "docker build -t makebuild/hello-img:${MAJOR_VERSION}.\$((${MINOR_VERSION} + 1)).${PATCH_VERSION} ."
+                    sh "docker build -t makebuild/hello-img:${MAJOR_VERSION}.\$((${MINOR_VERSION} + 1)).${PATCH_VERSION} ."
                 }
             }
         }
     }
+}
