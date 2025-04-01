@@ -10,7 +10,6 @@ pipeline {
     stages {
         stage('Build & Test') {
             steps {
-                sh 'sdk default java 21.0.6-ms'
                 sh './gradlew clean build'
             }
         }
