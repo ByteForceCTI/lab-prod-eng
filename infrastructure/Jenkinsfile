@@ -36,8 +36,8 @@ pipeline {
                     
                     sh "docker push makebuild/hello-img:${newTag}"
 
-                    sh "git tag ${env.IMAGE_TAG}"
-                    sh "git push https://$GITHUB_TOKEN@github.com/${DOCKER_PASSWORD_USR}/lab-prod-eng.git ${env.IMAGE_TAG}"  
+                    sh "git tag ${env.newTag}"
+                    sh "git push https://$GITHUB_TOKEN@github.com/${DOCKER_PASSWORD_USR}/lab-prod-eng.git ${env.newTag}"  
                     
                     //sh "docker build -t makebuild/hello-img:${MAJOR_VERSION}.\$((${MINOR_VERSION} + 1)).${PATCH_VERSION} ."
                 }
@@ -46,7 +46,7 @@ pipeline {
         stage('Run image') {
             steps {
                 script {
-                    sh "IMAGE_TAG=${env.IMAGE_TAG} docker compose up -d hello mongo"
+                    sh "IMAGE_TAG=${env.newTag} docker compose up -d hello mongo"
                 }
             }
         }
