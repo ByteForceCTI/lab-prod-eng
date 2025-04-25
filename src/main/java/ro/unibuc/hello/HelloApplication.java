@@ -36,13 +36,14 @@ public class HelloApplication {
 		informationRepository.save(new InformationEntity("Overview",
 				"This is an example of using a data storage engine running separately from our applications server"));
 
-		 UserEntity user1 = new UserEntity();
+		UserEntity user1 = new UserEntity();
         user1.setUsername("johndoe");
         user1.setEmail("john@example.com");
         user1.setName("John Doe");
         user1.setBio("Bio for John");
         user1.setProfilePicture("profile1.jpg");
-        user1.setPasswordHash("password1"); 
+        String plainPassword1 = "password1";
+        user1.setPasswordHash(BCrypt.hashpw(plainPassword1, BCrypt.gensalt()));
 
         UserEntity user2 = new UserEntity();
         user2.setUsername("janedoe");
@@ -50,7 +51,8 @@ public class HelloApplication {
         user2.setName("Jane Doe");
         user2.setBio("Bio for Jane");
         user2.setProfilePicture("profile2.jpg");
-        user2.setPasswordHash("password2");
+        String plainPassword2 = "password2";
+        user2.setPasswordHash(BCrypt.hashpw(plainPassword2, BCrypt.gensalt()));
 
         UserEntity user3 = new UserEntity();
         user3.setUsername("alexm1126");
@@ -58,8 +60,8 @@ public class HelloApplication {
         user3.setName("A M");
         user3.setBio("Bio for alexm1126");
         user3.setProfilePicture("profile3.jpg");
-        String plainPassword = "abc12345";
-        user3.setPasswordHash(BCrypt.hashpw(plainPassword, BCrypt.gensalt()));
+        String plainPassword3 = "abc12345";
+        user3.setPasswordHash(BCrypt.hashpw(plainPassword3, BCrypt.gensalt()));
 
         userRepository.save(user1);
         userRepository.save(user2);
