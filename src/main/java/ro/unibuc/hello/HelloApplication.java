@@ -11,6 +11,7 @@ import ro.unibuc.hello.data.InformationEntity;
 import ro.unibuc.hello.data.UserEntity;
 import ro.unibuc.hello.data.repository.InformationRepository;
 import ro.unibuc.hello.data.repository.UserRepository;
+import org.mindrot.jbcrypt.BCrypt;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "ro.unibuc.hello")
@@ -51,8 +52,18 @@ public class HelloApplication {
         user2.setProfilePicture("profile2.jpg");
         user2.setPasswordHash("password2");
 
+        UserEntity user3 = new UserEntity();
+        user3.setUsername("alexm1126");
+        user3.setEmail("alex@example.com");
+        user3.setName("A M");
+        user3.setBio("Bio for alexm1126");
+        user3.setProfilePicture("profile3.jpg");
+        String plainPassword = "abc12345";
+        user3.setPasswordHash(BCrypt.hashpw(plainPassword, BCrypt.gensalt()));
+
         userRepository.save(user1);
         userRepository.save(user2);
+        userRepository.save(user3);
 	}
 
 }

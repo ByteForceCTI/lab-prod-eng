@@ -39,6 +39,16 @@ public class UserController {
          return ResponseEntity.ok(userDto);
     }
 
+    @PostMapping("/loginjwt")
+    public ResponseEntity<String> loginjwt(@RequestBody LoginRequest request) {
+        try{
+            String token = userService.loginJWT(request.getUsername(), request.getPassword());
+            return ResponseEntity.ok(token);
+        } catch(Exception e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Login failed");
+        }
+    }
+
     // @GetMapping("/profile/{username}")
     // public ResponseEntity<UserDto> getUserProfile(@PathVariable String username) {
     //      UserDto userDto = userService.getUserProfile(username);

@@ -61,3 +61,15 @@ GET http://localhost:8080/users/all
 # @prompt username
 GET http://localhost:8080/users/profile
     ?username = {{username}}
+
+
+### Login a user with credentials and return a JWT
+@reqUser = alexm1126
+@reqPwd = abc12345
+POST http://localhost:8080/users/loginjwt
+Content-Type: application/json
+
+{
+    "username": "{{reqUser}}",
+    "password": "{{reqPwd}}"
+}
