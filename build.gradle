@@ -45,6 +45,8 @@ dependencies {
 	implementation 'jakarta.annotation:jakarta.annotation-api:3.0.0'
 	implementation 'org.mindrot:jbcrypt:0.4'
 	implementation 'org.aspectj:aspectjtools:1.9.20'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
 	
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'

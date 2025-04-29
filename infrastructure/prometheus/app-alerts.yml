@@ -18,3 +18,11 @@ groups:
         annotations:
           summary: Increased info retrieval rate {{ $labels.value}} {{ $value }}
           description: "A container has disappeared\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      - alert: CRITICAL-ApiIncreasedErrorRate
+        expr: rate(exceptions_internalServerErrors_total[1m]) > 20
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: High API Internal server errors {{ $labels.value}} {{ $value }}
+          description: "The APIs are experiencing a high level of error rates\n VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

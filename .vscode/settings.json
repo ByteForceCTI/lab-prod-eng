@@ -1,6 +1,6 @@
 {
     "java.server.launchMode": "Standard",
-    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.configuration.updateBuildConfiguration": "automatic",
     "java.debug.settings.onBuildFailureProceed": true,
     "java.project.sourcePaths": [
         "src/main/java"

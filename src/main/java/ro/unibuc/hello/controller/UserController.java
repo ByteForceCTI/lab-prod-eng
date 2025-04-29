@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.micrometer.core.annotation.Counted;
 import ro.unibuc.hello.dto.UserDto;
 import ro.unibuc.hello.service.implementation.UserServiceImpl;
 
@@ -40,6 +41,7 @@ public class UserController {
     }
 
     @PostMapping("/loginjwt")
+    @Counted(value= "users_LoginJWTRequests", description = "Total number login requests")
     public ResponseEntity<String> loginjwt(@RequestBody LoginRequest request) {
         try{
             String token = userService.loginJWT(request.getUsername(), request.getPassword());

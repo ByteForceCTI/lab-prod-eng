@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
+import io.micrometer.core.annotation.Counted;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -50,6 +52,7 @@ public class GlobalExceptionHandler {
    }
 
     // map any untreated exception to error 500
+    @Counted(value= "exceptions.internalServerErrors", description = "Total number of internal server exceptions handled")
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleAllExceptions(Exception ex, WebRequest request) {
         logger.error("Unhandled exception occurred while processing request: {}",
