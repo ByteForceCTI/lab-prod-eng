@@ -10,6 +10,8 @@ import ro.unibuc.hello.dto.UserDto;
 import ro.unibuc.hello.exception.EntityNotFoundException;
 import ro.unibuc.hello.exception.ForbiddenAccessException;
 import ro.unibuc.hello.service.PostService;
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
 
 import java.util.List;
 
@@ -21,6 +23,8 @@ public class PostController extends AbstractAuthController {
     private PostService postService;
 
     @PostMapping
+    @Timed(value = "hello.posts.timeCreated", description = "Time taken to create new post")
+    @Counted(value = "hello.posts.newPostCount", description = "How many new posts have been created")
     public ResponseEntity<PostEntity> createPost(@RequestBody PostEntity post,
                                                  @RequestHeader("Authorization") String authHeader) {
         UserDto user = getAuthenticatedUser(authHeader);
@@ -34,6 +38,7 @@ public class PostController extends AbstractAuthController {
     }
 
     @GetMapping
+    @Timed(value = "hello.posts.timeToGetAll", description = "Time taken return all posts for a user's homepage")
     public ResponseEntity<List<PostDto>> getAllPosts(@RequestHeader("Authorization") String authHeader) {
         UserDto user = getAuthenticatedUser(authHeader);
         if (user == null) {
@@ -55,6 +60,7 @@ public class PostController extends AbstractAuthController {
     }
 
     @PutMapping("/{id}")
+    @Timed(value = "hello.posts.timeUpdated", description = "Time taken to update a post")
     public ResponseEntity<PostEntity> updatePost(@PathVariable("id") String id, @RequestBody PostEntity post,
                                                  @RequestHeader("Authorization") String authHeader) throws EntityNotFoundException {
         UserDto user = getAuthenticatedUser(authHeader);
@@ -73,6 +79,7 @@ public class PostController extends AbstractAuthController {
     }
 
     @DeleteMapping("/{id}")
+    @Timed(value = "hello.posts.timeDelete", description = "Time taken to delete a post")
     public ResponseEntity<Void> deletePost(@PathVariable("id") String id,
                                            @RequestHeader(value="Authorization", required = true) String authHeader) throws EntityNotFoundException {
         UserDto user = getAuthenticatedUser(authHeader);

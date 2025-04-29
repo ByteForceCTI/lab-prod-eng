@@ -63,6 +63,14 @@ public class HelloApplication {
         String plainPassword3 = "abc12345";
         user3.setPasswordHash(BCrypt.hashpw(plainPassword3, BCrypt.gensalt()));
 
+        UserEntity user3 = new UserEntity();
+        user3.setUsername("alexm1126");
+        user3.setEmail("alexm1126@example.com");
+        user3.setName("Alex M");
+        user3.setBio("Bio for alexm1126");
+        user3.setProfilePicture("profile3.jpg");
+        user3.setPasswordHash(BCrypt.hashpw("password3", BCrypt.gensalt());
+
         userRepository.save(user1);
         userRepository.save(user2);
         userRepository.save(user3);
