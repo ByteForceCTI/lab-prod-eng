@@ -7,6 +7,7 @@ import java.util.Date;
 public class UserDto {
     private String id;  
     private String username;
+    private String name;
     private String bio;
     private String profilePicture;
     private Date dateOfBirth;

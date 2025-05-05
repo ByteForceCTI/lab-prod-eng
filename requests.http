@@ -73,3 +73,27 @@ Content-Type: application/json
     "username": "{{reqUser}}",
     "password": "{{reqPwd}}"
 }
+
+### Create a new user (with all required fields)
+@createUsername = johndoe
+@createName = John Doe
+@createEmail = john.doe@example.com
+@createPassword = secret123
+@createBio = Developer and coffee lover
+@createProfilePicture = https://ro.pinterest.com/pin/68746238281/
+@createDOB = 631152000000
+
+POST http://localhost:8080/users/create
+Content-Type: application/json
+
+{
+  "username": "{{createUsername}}",
+  "name": "{{createName}}",
+  "email": "{{createEmail}}",
+  "password": "{{createPassword}}",
+  "dateOfBirth": "{{createDOB}}",
+  "bio": "{{createBio}}",
+  "profilePicture": "{{createProfilePicture}}"
+}
+
+GET http://localhost:8080/actuator/mappings

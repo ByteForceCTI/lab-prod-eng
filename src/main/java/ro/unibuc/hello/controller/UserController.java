@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
 
 import ro.unibuc.hello.dto.UserDto;
 import ro.unibuc.hello.service.implementation.UserServiceImpl;
@@ -27,6 +29,8 @@ public class UserController {
     }
 
 
+    @Counted(value = "users_create_requests", description = "Număr total de cereri createUser")
+    @Timed(value   = "users_create_latency",   description = "Durata apelului createUser")
     @PostMapping("/create")
     public ResponseEntity<UserDto> createUser(@RequestBody CreateUserRequest request) {
          UserDto userDto = userService.createUser(request.toUserDto(), request.getEmail(),  request.getPassword());
@@ -79,6 +83,8 @@ public class UserController {
          return ResponseEntity.ok(userDto);
     }
 
+    @Counted(value = "users_delete_requests", description = "Număr total de cereri deleteUser")
+    @Timed(value   = "users_delete_latency",   description = "Durata apelului deleteUser")
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> deleteUser(@PathVariable("userId") String userId) {
          userService.deleteUser(userId);

@@ -1,5 +1,11 @@
 package ro.unibuc.hello.exception;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -8,6 +14,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import io.micrometer.core.annotation.Counted;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -57,4 +64,26 @@ public class GlobalExceptionHandler {
         // custom error message for generic exception
         return new ResponseEntity<>("An internal error occurred.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    // // map any untreated exception to error 500
+    // @ExceptionHandler(Exception.class)
+    // @Counted(value = "exceptions.internalServerErrors", description = "Total number of internal errors")
+    // public ResponseEntity<Map<String,Object>> handleAllExceptions(Exception ex, WebRequest request) {
+    //     // 1) Log full exception
+    //     logger.error("Unhandled exception while processing request: {}", request.getDescription(false), ex);
+
+    //     // 2) Build a map of details
+    //     Map<String,Object> body = new LinkedHashMap<>();
+    //     body.put("timestamp", LocalDateTime.now());
+    //     body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+    //     body.put("error", ex.getClass().getSimpleName());
+    //     body.put("message", ex.getMessage());
+
+    //     // 3) If you really need the stack trace in the response (DEV ONLY!), include it:
+    //     StringWriter sw = new StringWriter();
+    //     ex.printStackTrace(new PrintWriter(sw));
+    //     body.put("trace", sw.toString());
+
+    //     return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    // }
 }

@@ -59,7 +59,7 @@ public class UserServiceImpl implements UserService {
     userEntity.setDateOfBirth(userDto.getDateOfBirth());
     userEntity.setEmail(email);
     userEntity.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
-
+    userEntity.setName(userDto.getName());
     UserEntity savedEntity = userRepository.save(userEntity);
     return convertToDto(savedEntity);
 }
