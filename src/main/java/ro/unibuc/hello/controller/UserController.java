@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
 import ro.unibuc.hello.dto.UserDto;
 import ro.unibuc.hello.service.implementation.UserServiceImpl;
 
@@ -42,6 +43,7 @@ public class UserController {
 
     @PostMapping("/loginjwt")
     @Counted(value= "users_LoginJWTRequests", description = "Total number login requests")
+    @Timed(value="users_timeToLoginJWT", description = "Time taken for a user to get the JWT token")
     public ResponseEntity<String> loginjwt(@RequestBody LoginRequest request) {
         try{
             String token = userService.loginJWT(request.getUsername(), request.getPassword());
