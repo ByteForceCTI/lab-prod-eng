@@ -1,5 +1,11 @@
 package ro.unibuc.hello.exception;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -52,12 +58,22 @@ public class GlobalExceptionHandler {
    }
 
     // map any untreated exception to error 500
-    @Counted(value= "exceptions.internalServerErrors", description = "Total number of internal server exceptions handled")
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleAllExceptions(Exception ex, WebRequest request) {
-        logger.error("Unhandled exception occurred while processing request: {}",
-                     request.getDescription(false), ex);
-        // custom error message for generic exception
-        return new ResponseEntity<>("An internal error occurred.", HttpStatus.INTERNAL_SERVER_ERROR);
+    @Counted(value = "exceptions.internalServerErrors", description = "Total number of internal errors")
+    public ResponseEntity<Map<String,Object>> handleAllExceptions(Exception ex, WebRequest request) {
+        logger.error("Unhandled exception while processing request: {}", request.getDescription(false), ex);
+
+        Map<String,Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put("error", ex.getClass().getSimpleName());
+        body.put("message", ex.getMessage());
+
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw));
+        body.put("trace", sw.toString());
+
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
 }
